@@ -1,0 +1,4 @@
+.sst
+.clj-kondo
+.lsp
+**/target/**

@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+    "services/apps/public-api",
+    "services/apps/events",
+    "services/packages/protos",
+    "services/packages/core",
+    "services/packages/lambda-client",
+]
+
+# Shared dependencies across workspace
+[workspace.dependencies]
+# Lambda runtime
+lambda_http = "0.11"
+lambda_runtime = "0.11"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+# AWS SDK
+aws-config = { version = "1.1", features = ["behavior-version-latest"] }
+aws-sdk-lambda = "1.14"
+aws-sdk-dynamodb = "1.14"
+
+# Protobuf
+prost = "0.12"
+prost-types = "0.12"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[workspace.dependencies.protos]
+path = "services/packages/protos"
+
+[workspace.dependencies.core]
+path = "services/packages/core"
+
+[workspace.dependencies.lambda-client]
+path = "services/packages/lambda-client"

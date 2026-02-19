@@ -1,0 +1,12 @@
+[package]
+name = "lambda-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aws-config = { workspace = true }
+aws-sdk-lambda = { workspace = true }
+prost = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+protos = { workspace = true }
