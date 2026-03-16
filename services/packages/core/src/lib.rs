@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+pub mod models;
+
 #[derive(Error, Debug)]
 pub enum AppError {
     #[error("Resource not found: {0}")]

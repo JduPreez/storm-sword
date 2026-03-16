@@ -1,8 +1,7 @@
 use aws_config;
 use aws_sdk_lambda::{Client as LambdaClient, primitives::Blob};
-use prost::Message;
+use serde::{Serialize, de::DeserializeOwned};
 use thiserror::Error;
-use tracing::{debug, error};
 
 #[derive(Error, Debug)]
 pub enum InvocationError {
@@ -16,7 +15,7 @@ pub enum InvocationError {
     LambdaError(String),
 }
 
-/// Client for invoking private Lambda functions with protobuf payloads
+/// Client for invoking private Lambda functions with JSON payloads
 pub struct PrivateLambdaClient {
     lambda_client: LambdaClient,
     function_arn: String,
@@ -34,90 +33,46 @@ impl PrivateLambdaClient {
         }
     }
 
-    /// Invoke a private Lambda with protobuf payload
+       /// Invoke a private Lambda with JSON payload
     pub async fn invoke<Req, Resp>(&self, request: Req) -> Result<Resp, InvocationError>
     where
-        Req: Message,
-        Resp: Message + Default,
+        Req: Serialize,
+        Resp: DeserializeOwned,
     {
-        debug!("Invoking Lambda: {}", self.function_arn);
+        println!("Invoking Lambda: {}", self.function_arn);
 
-        // Serialize request to protobuf bytes
-        let mut buf = Vec::new();
-        request.encode(&mut buf)
-            .map_err(|e| {
-                error!("Failed to encode request: {}", e);
-                InvocationError::SerializationError(e.to_string())
-            })?;
+        let payload = serde_json::to_vec(&request)
+            .map_err(|e| InvocationError::SerializationError(e.to_string()))?;
 
-        debug!("Request payload size: {} bytes", buf.len());
+        println!("Request payload size: {} bytes", payload.len());
 
-        // Invoke Lambda
         let result = self.lambda_client
             .invoke()
             .function_name(&self.function_arn)
             .invocation_type(aws_sdk_lambda::types::InvocationType::RequestResponse)
-            .payload(Blob::new(buf))
+            .payload(Blob::new(payload))
             .send()
             .await
-            .map_err(|e| {
-              eprintln!("===== Lambda invocation error details =====");
-              eprintln!("Error type: {}", std::any::type_name_of_val(&e));
-              eprintln!("Error Display: {}", e);
-              eprintln!("Error Debug: {:?}", e);
-              eprintln!("Error Pretty Debug: {:#?}", e);
-              
-              // Try to match on specific error types
-              use aws_sdk_lambda::error::SdkError;
-              match &e {
-                  SdkError::ServiceError(service_err) => {
-                      eprintln!(">>> This is a ServiceError");
-                      eprintln!(">>> Inner error: {:?}", service_err.err());
-                      eprintln!(">>> Raw response: {:?}", service_err.raw());
-                  }
-                  SdkError::ConstructionFailure(err) => {
-                      eprintln!(">>> This is a ConstructionFailure: {:?}", err);
-                  }
-                  SdkError::TimeoutError(err) => {
-                      eprintln!(">>> This is a TimeoutError: {:?}", err);
-                  }
-                  SdkError::DispatchFailure(err) => {
-                      eprintln!(">>> This is a DispatchFailure: {:?}", err);
-                  }
-                  SdkError::ResponseError(err) => {
-                      eprintln!(">>> This is a ResponseError: {:?}", err);
-                  }
-                  _ => {
-                      eprintln!(">>> Unknown error variant");
-                  }
-              }
-              eprintln!("==========================================");
-              
-              error!("Lambda invocation failed: {}", e);
-              InvocationError::InvocationFailed(format!("{}", e))
-            })?;
+            .map_err(|e| InvocationError::InvocationFailed(e.to_string()))?;
 
-        // Check for function errors
         if let Some(function_error) = result.function_error() {
-            error!("Lambda returned error: {}", function_error);
-            return Err(InvocationError::LambdaError(function_error.to_string()));
+            let payload_text = result
+                .payload()
+                .map(|p| String::from_utf8_lossy(p.as_ref()).to_string())
+                .unwrap_or_else(|| "<no error payload>".to_string());
+
+            return Err(InvocationError::LambdaError(format!(
+                "{}: {}",
+                function_error,
+                payload_text
+            )));
         }
 
-        // Get response payload
         let payload = result.payload()
-            .ok_or_else(|| {
-                error!("No payload returned from Lambda");
-                InvocationError::DeserializationError("No payload returned".to_string())
-            })?;
+            .ok_or_else(|| InvocationError::DeserializationError("No payload returned".to_string()))?;
 
-        debug!("Response payload size: {} bytes", payload.as_ref().len());
-
-        // Deserialize protobuf response
-        let response = Resp::decode(payload.as_ref())
-            .map_err(|e| {
-                error!("Failed to decode response: {}", e);
-                InvocationError::DeserializationError(e.to_string())
-            })?;
+        let response = serde_json::from_slice::<Resp>(payload.as_ref())
+            .map_err(|e| InvocationError::DeserializationError(e.to_string()))?;
 
         Ok(response)
     }

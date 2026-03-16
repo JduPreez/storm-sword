@@ -32,6 +32,8 @@ export default $config({
       }
     });
 
+    // TODO: https://sst.dev/docs/examples/#aws-lamda-rust-multiple-binaries
+
     // Private Events Service Lambda - no HTTP endpoint
     const eventsService = new sst.aws.Function("EventsService", {
       runtime: "provided.al2023",

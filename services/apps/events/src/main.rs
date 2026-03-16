@@ -1,26 +1,17 @@
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
-use prost::Message;
-use tracing::{info, error};
+use tracing::info;
 use tracing_subscriber;
 use std::panic;
 
-use protos::{ListEventsRequest, ListEventsResponse, Event};
+use core::models::events::Event;
+use core::models::api::{ListEventsRequest, ListEventsResponse};
 
 /// Events service - handles all event-related operations
-async fn handler(event: LambdaEvent<Vec<u8>>) -> Result<Vec<u8>, Error> {
-    info!("Handler invoked, payload size: {} bytes", event.payload.len());
-    
-    // Decode the protobuf request
-    let request = ListEventsRequest::decode(event.payload.as_slice())
-        .map_err(|e| {
-            error!("Failed to decode request: {}", e);
-            format!("Failed to decode request: {}", e)
-        })?;
-
-    info!("Request decoded successfully, limit: {}", request.limit);
+async fn handler(event: LambdaEvent<ListEventsRequest>) -> Result<ListEventsResponse, Error> {
+    let request = event.payload;
+    info!("Handler invoked, limit: {}", request.limit);
 
     // TODO: Query DynamoDB here
-    // For now, return mock data
     let events = vec![
         Event {
             id: "evt_001".to_string(),
@@ -31,7 +22,7 @@ async fn handler(event: LambdaEvent<Vec<u8>>) -> Result<Vec<u8>, Error> {
             distance_min: 42.195,
             distance_max: 42.195,
             location: "Boston, MA".to_string(),
-            metadata: Default::default(),
+            metadata: serde_json::json!({}),
         },
         Event {
             id: "evt_002".to_string(),
@@ -42,7 +33,7 @@ async fn handler(event: LambdaEvent<Vec<u8>>) -> Result<Vec<u8>, Error> {
             distance_min: 21.0975,
             distance_max: 21.0975,
             location: "New York, NY".to_string(),
-            metadata: Default::default(),
+            metadata: serde_json::json!({}),
         },
         Event {
             id: "evt_003".to_string(),
@@ -53,7 +44,7 @@ async fn handler(event: LambdaEvent<Vec<u8>>) -> Result<Vec<u8>, Error> {
             distance_min: 5.0,
             distance_max: 5.0,
             location: "Portland, OR".to_string(),
-            metadata: Default::default(),
+            metadata: serde_json::json!({}),
         },
     ];
 
@@ -63,27 +54,15 @@ async fn handler(event: LambdaEvent<Vec<u8>>) -> Result<Vec<u8>, Error> {
     };
 
     info!("Returning {} events", response.events.len());
-
-    // Encode response to protobuf bytes
-    let mut buf = Vec::new();
-    response.encode(&mut buf)
-        .map_err(|e| {
-            error!("Failed to encode response: {}", e);
-            format!("Failed to encode response: {}", e)
-        })?;
-
-    info!("Response encoded successfully, size: {} bytes", buf.len());
-    Ok(buf)
+    Ok(response)
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    // Set panic handler to log panics
     panic::set_hook(Box::new(|panic_info| {
         eprintln!("PANIC: {:?}", panic_info);
     }));
 
-    // Initialize tracing - use env-filter to respect RUST_LOG
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::from_default_env()

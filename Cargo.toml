@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "services/apps/public-api",
     "services/apps/events",
-    "services/packages/protos",
     "services/packages/core",
     "services/packages/lambda-client",
 ]
@@ -35,9 +34,6 @@ anyhow = "1.0"
 # Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
-[workspace.dependencies.protos]
-path = "services/packages/protos"
 
 [workspace.dependencies.core]
 path = "services/packages/core"
