@@ -14,6 +14,7 @@ export default $config({
     // Field ref is a 'namespaced' type & location for indexing:
     //  type + addressCountry + addressStateProvince.
     // Field id is a unique CUID.
+    const dev = false;
     const eventsTable = new sst.aws.Dynamo("Events", {
       fields: {
         ns: "string",
@@ -32,7 +33,7 @@ export default $config({
       }
     });
 
-    // TODO: https://sst.dev/docs/examples/#aws-lamda-rust-multiple-binaries
+    // TODO (maybe): https://sst.dev/docs/examples/#aws-lamda-rust-multiple-binaries
 
     // Private Events Service Lambda - no HTTP endpoint
     const eventsService = new sst.aws.Function("EventsService", {
@@ -40,7 +41,7 @@ export default $config({
       handler: "bootstrap",
       bundle: "services/apps/events/target/lambda/events",
       link: [eventsTable],
-      dev: false,
+      dev,
       environment: {
         EVENTS_TABLE_NAME: eventsTable.name,
         RUST_LOG: "info",
@@ -50,21 +51,21 @@ export default $config({
     // Public API Gateway
     const api = new sst.aws.ApiGatewayV2("PublicApi");
 
+    api.route("GET /health", {
+      runtime: "provided.al2023",
+      handler: "bootstrap",
+      bundle: "services/apps/public-api/target/lambda/public-api",
+      dev,
+      environment: { RUST_LOG: "info" },
+    });
+
     api.route("GET /events", {
       runtime: "provided.al2023",
       handler: "bootstrap",
       bundle: "services/apps/public-api/target/lambda/public-api",
-      dev: false,
-      permissions: [
-        {
-          actions: ["lambda:InvokeFunction"],
-          resources: [eventsService.arn],
-        }
-      ],
-      environment: {
-        EVENTS_LAMBDA_ARN: eventsService.arn,
-        RUST_LOG: "info",
-      }
+      dev,
+      permissions: [{ actions: ["lambda:InvokeFunction"], resources: [eventsService.arn] }],
+      environment: { EVENTS_LAMBDA_ARN: eventsService.arn, RUST_LOG: "info" },
     });
 
     return {

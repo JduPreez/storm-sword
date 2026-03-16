@@ -1,100 +1,35 @@
+mod controllers;
+
 use lambda_http::{run, service_fn, Body, Request, Response};
-use serde_json::json;
-use tracing_subscriber;
 
-use lambda_client::PrivateLambdaClient;
-use core::{ErrorResponse, utils};
-use core::models::api::{ListEventsRequest, ListEventsResponse};
+async fn handler(event: Request) -> Result<Response<Body>, lambda_http::Error> {
+    let method = event.method().as_str();
+    // lambda_http strips the stage prefix; raw_http_path gives the plain path
+    let path = event.uri().path();
 
-async fn handler(_event: Request) -> Result<Response<Body>, lambda_http::Error> {
-  eprintln!(">>>>>> Public API handler invoked");
-
-  let events_lambda_arn = match utils::get_env_var("EVENTS_LAMBDA_ARN") {
-    Ok(arn) => {
-        eprintln!("Using EVENTS_LAMBDA_ARN: {}", arn);
-        arn
-    },
-    Err(e) => {
-        eprintln!("Failed to get EVENTS_LAMBDA_ARN: {}", e);
-        let error_response = ErrorResponse::new("ConfigError", "EVENTS_LAMBDA_ARN not set".to_string());
-        let body = serde_json::to_string(&error_response)?;
-
-        return Response::builder()
-            .status(500)
-            .header("content-type", "application/json")
-            .body(Body::Text(body))
-            .map_err(Into::into);
+    match (method, path) {
+        ("GET", "/health")        => controllers::health::handler(event).await,
+        ("GET", "/events")        => controllers::events::list(event).await,
+        // add more routes here
+        _ => {
+            let body = serde_json::json!({ "error": "NotFound", "message": "Route not found" });
+            Ok(Response::builder()
+                .status(404)
+                .header("content-type", "application/json")
+                .body(Body::Text(body.to_string()))
+                .map_err(Into::<lambda_http::Error>::into)?)
+        }
     }
-  };
-
-  eprintln!(">>>>>> Creating Lambda client");
-  let client = PrivateLambdaClient::new(events_lambda_arn).await;
-
-  let request = ListEventsRequest {
-      start_date: None,
-      end_date: None,
-      limit: 10,
-  };
-
-  eprintln!(">>>>>> Invoking events Lambda");
-
-  match client.invoke::<_, ListEventsResponse>(request).await {
-      Ok(response) => {
-          eprintln!("Successfully retrieved {} events", response.events.len());
-
-          let events: Vec<_> = response.events.iter().map(|e| {
-              json!({
-                  "id": e.id,
-                  "ns": e.ns,
-                  "name": e.name,
-                  "startDate": e.start_date,
-                  "endDate": e.end_date,
-                  "distanceMin": e.distance_min,
-                  "distanceMax": e.distance_max,
-                  "location": e.location,
-              })
-          }).collect();
-
-          let body = json!({
-              "events": events,
-              "nextToken": response.next_token
-          }).to_string();
-
-          Response::builder()
-            .status(200)
-            .header("content-type", "application/json")
-            .body(Body::Text(body))
-            .map_err(Into::into)
-      }
-      Err(e) => {
-          eprintln!(">>>>>> Failed to invoke events service: {}", e);
-
-          let error_response = ErrorResponse::new("InternalError", e.to_string());
-          let body = serde_json::to_string(&error_response)?;
-
-          Response::builder()
-            .status(500)
-            .header("content-type", "application/json")
-            .body(Body::Text(body))
-            .map_err(Into::into)
-      }
-  }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), lambda_http::Error> {
-  // Initialize tracing - use env-filter to respect RUST_LOG
-  tracing_subscriber::fmt()
-    .with_env_filter(
-        tracing_subscriber::EnvFilter::from_default_env()
-            .add_directive("info".parse().unwrap())
-    )
-    .with_target(false)
-    .without_time()
-    .with_ansi(false)
-    .init();
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_target(false)
+        .without_time()
+        .with_ansi(false)
+        .init();
 
-  println!("Starting public API Lambda");
-
-  run(service_fn(handler)).await
+    run(service_fn(handler)).await
 }
