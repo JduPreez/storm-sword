@@ -1,6 +1,7 @@
-use lambda_http::{Body, Request, Response};
+use lambda_http::{Body, Request, Response };
+use core::models::api::ApiResult;
 
-pub async fn handler(_event: Request) -> Result<Response<Body>, lambda_http::Error> {
+pub async fn handler(_event: Request) -> ApiResult {
   let response = Response::builder()
     .status(200)
     .header("content-type", "application/json")

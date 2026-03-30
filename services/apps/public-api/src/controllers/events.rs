@@ -2,9 +2,9 @@ use lambda_http::{Body, Request, Response};
 use serde_json::json;
 use lambda_client::PrivateLambdaClient;
 use core::{ErrorResponse, utils};
-use core::models::api::{ListEventsRequest, ListEventsResponse};
+use core::models::api::{ListEventsRequest, ListEventsResponse, ApiResult};
 
-pub async fn list(_event: Request) -> Result<Response<Body>, lambda_http::Error> {
+pub async fn list(_event: Request) -> ApiResult {
     let events_lambda_arn = match utils::get_env_var("EVENTS_LAMBDA_ARN") {
         Ok(arn) => arn,
         Err(_) => {

@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+use lambda_http::{Body, Response};
+use std::future::Future;
+use std::pin::Pin;
 
 use super::events::Event;
 
@@ -14,3 +17,9 @@ pub struct ListEventsResponse {
     pub events: Vec<Event>,
     pub next_token: String,
 }
+
+pub type ApiResult = Result<Response<Body>, lambda_http::Error>;
+
+pub type BoxApiResultFuture = Pin<Box<dyn Future<Output = ApiResult> + Send>>;
+
+pub type BoxApiHandler = Box<dyn Fn(&lambda_http::Request) -> BoxApiResultFuture + Send + Sync>;
