@@ -1,5 +1,5 @@
 use lambda_http::{Body, Request, Response };
-use core::models::api::ApiResult;
+use base::models::api::ApiResult;
 
 pub async fn handler(_event: Request) -> ApiResult {
   let response = Response::builder()

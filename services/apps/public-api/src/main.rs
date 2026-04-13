@@ -1,23 +1,25 @@
 mod controllers;
+mod service;
 
-use core::services::api::{handler_boxed, not_found_boxed};
-use core::models::api::{BoxApiHandler, ApiResult};
-use core::{partial};
+use base::services::api::{handler_boxed, not_found_boxed};
+use base::models::api::{BoxApiHandler, ApiResult};
+use base::{partial};
 
 use lambda_http::{run, service_fn, Request, Body, http::Response};
 use std::future::Future;
 use std::error::Error;
 use std::pin::Pin;
 use std::sync::Arc;
-use controllers::health::handler as health_handler;
-use controllers::events::list as list_events;
+use controllers::health_controller::handler as health_handler;
+use controllers::events_controller::{list_events, save_event};
 
 #[macro_use]
 extern crate http_router;
 
 struct ControllerHandlers {
   pub get_health: BoxApiHandler,
-  pub get_events: BoxApiHandler,
+  pub list_events: BoxApiHandler,
+  pub save_event: BoxApiHandler,
 }
 
 async fn main_handler<R>(router: Arc<R>, request: Request) -> ApiResult
@@ -41,14 +43,20 @@ async fn main() -> Result<(), lambda_http::Error> {
 
     let handlers = ControllerHandlers {
         get_health: handler_boxed(health_handler),
-        get_events: handler_boxed(list_events),
+        list_events: handler_boxed(list_events),
+        save_event: handler_boxed(save_event),
     };
 
-    let ControllerHandlers { get_health, get_events } = handlers;
+    let ControllerHandlers {
+      get_health,
+      list_events,
+      save_event,
+    } = handlers;
 
     let router = Arc::new(router!(
       GET /health => get_health,
-      GET /events => get_events,
+      GET /events => list_events,
+      POST /events => save_event,
       _ => not_found_boxed,
     ));
 

@@ -1,4 +1,4 @@
-# core
+# base::utils::functional
 
 Shared Rust utilities and models used by services in this workspace.
 
@@ -16,7 +16,7 @@ These macros capture bound values and return a closure.
 Use this shorthand when only one argument remains after partial application.
 
 ```rust
-use core::{partial, partial_right};
+use base::utils::functional::{partial, partial_right};
 
 fn add(a: i32, b: i32) -> i32 {
     a + b
@@ -34,7 +34,7 @@ assert_eq!(plus_10(5), 15);
 Use the 3-argument macro form and name the remaining closure parameters.
 
 ```rust
-use core::{partial, partial_right};
+use base::utils::functional{partial, partial_right};
 
 fn format_name(first: String, last: String, suffix: String) -> String {
     format!("{} {}{}", first, last, suffix)

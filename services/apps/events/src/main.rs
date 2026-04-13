@@ -3,8 +3,8 @@ use tracing::info;
 use tracing_subscriber;
 use std::panic;
 
-use core::models::events::Event;
-use core::models::api::{ListEventsRequest, ListEventsResponse};
+use base::models::events::Event;
+use base::models::api::{ListEventsRequest, ListEventsResponse};
 
 /// Events service - handles all event-related operations
 async fn handler(event: LambdaEvent<ListEventsRequest>) -> Result<ListEventsResponse, Error> {

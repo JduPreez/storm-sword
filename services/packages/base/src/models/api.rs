@@ -18,6 +18,16 @@ pub struct ListEventsResponse {
     pub next_token: String,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SaveEventRequest {
+    pub event: Event,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SaveEventResponse {
+    pub event: Event,
+}
+
 pub type ApiResult = Result<Response<Body>, lambda_http::Error>;
 
 pub type BoxApiResultFuture = Pin<Box<dyn Future<Output = ApiResult> + Send>>;

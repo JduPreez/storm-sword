@@ -15,4 +15,5 @@ http_router = "0.1"
 
 # Workspace packages
 lambda-client = { workspace = true }
-core = { workspace = true }
+base = { workspace = true }
+once_cell = "1.21.4"
