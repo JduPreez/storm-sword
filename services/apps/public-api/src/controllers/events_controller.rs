@@ -4,9 +4,10 @@ use lambda_client::PrivateLambdaClient;
 use base::ErrorResponse;
 use base::models::api::{
   ListEventsRequest,
-  ListEventsResponse,
   SaveEventRequest,
   SaveEventResponse,
+  EventRequest,
+  EventResponse,
   ApiResult, 
 };
 use crate::service::CONFIG;
@@ -30,10 +31,14 @@ pub async fn list_events(_req: Request) -> ApiResult {
     };
 
   let client = PrivateLambdaClient::new(events_lambda_arn).await;
-  let lambda_req = ListEventsRequest { start_date: None, end_date: None, limit: 10 };
+  let lambda_req = EventRequest::ListEvents(ListEventsRequest {
+    start_date: None,
+    end_date: None,
+    limit: 10,
+  });
 
-  match client.invoke::<_, ListEventsResponse>(lambda_req).await {
-    Ok(response) => {
+  match client.invoke::<_, EventResponse>(lambda_req).await {
+    Ok(EventResponse::ListEvents(response)) => {
       let events: Vec<_> = response.events.iter()
         .map(|e| serde_json::to_value(e).unwrap())
         .collect();
@@ -47,6 +52,15 @@ pub async fn list_events(_req: Request) -> ApiResult {
 
       Ok(response)
     }
+    Ok(_) => {
+      let body = json!({ "error": "Unexpected response from events service" }).to_string();
+      let response = Response::builder()
+        .status(500)
+        .header("content-type", "application/json")
+        .body(Body::Text(body))?;
+
+      Ok(response)
+    },
     Err(e) => {
       let body = serde_json::to_string(&ErrorResponse::new("InternalError", e.to_string()))?;
 
@@ -80,10 +94,12 @@ pub async fn save_event(req: Request) -> ApiResult {
 
   let client = PrivateLambdaClient::new(events_lambda_arn).await;
 
-  let lambda_event: Option<SaveEventRequest> = match serde_json::from_slice(req.body().as_ref()) {
-    Ok(save_event_req) => Some(save_event_req),
+  let save_event_req: SaveEventRequest = match serde_json::from_slice(req.body().as_ref()) {
+    Ok(value) => value,
     Err(e) => {
-      let body = serde_json::to_string(&ErrorResponse::new("BadRequest", format!("Invalid request body: {}", e)))?;
+      let body = serde_json::to_string(
+        &ErrorResponse::new("BadRequest", format!("Invalid request body: {}", e))
+      )?;
 
       let response = Response::builder()
         .status(400)
@@ -94,14 +110,24 @@ pub async fn save_event(req: Request) -> ApiResult {
     }
   };
 
-  let lambda_req = SaveEventRequest { event: lambda_event.unwrap().event };
+  let lambda_req = EventRequest::SaveEvent(save_event_req);
 
-  match client.invoke::<_, SaveEventResponse>(lambda_req).await {
-    Ok(response) => {
+  match client.invoke::<_, EventResponse>(lambda_req).await {
+    Ok(EventResponse::SaveEvent(response)) => {
       let body = serde_json::to_string(&response)?;
 
       let response = Response::builder()
           .status(200)
+          .header("content-type", "application/json")
+          .body(Body::Text(body))?;
+
+      Ok(response)
+    }
+    Ok(_) => {
+      let body = json!({ "error": "Unexpected response from events service" }).to_string();
+
+      let response = Response::builder()
+          .status(500)
           .header("content-type", "application/json")
           .body(Body::Text(body))?;
 

@@ -65,7 +65,22 @@ export default $config({
       bundle: "services/apps/public-api/target/lambda/public-api",
       dev,
       permissions: [{ actions: ["lambda:InvokeFunction"], resources: [eventsService.arn] }],
-      environment: { EVENTS_LAMBDA_ARN: eventsService.arn, RUST_LOG: "info" },
+      environment: {
+        EVENTS_LAMBDA_ARN: eventsService.arn,
+        RUST_LOG: "info",
+      },
+    });
+
+    api.route("POST /events", {
+      runtime: "provided.al2023",
+      handler: "bootstrap",
+      bundle: "services/apps/public-api/target/lambda/public-api",
+      dev,
+      permissions: [{ actions: ["lambda:InvokeFunction"], resources: [eventsService.arn] }],
+      environment: {
+        EVENTS_LAMBDA_ARN: eventsService.arn,
+        RUST_LOG: "info",
+      },
     });
 
     return {
