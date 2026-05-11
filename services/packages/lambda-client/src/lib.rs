@@ -16,12 +16,12 @@ pub enum InvocationError {
 }
 
 /// Client for invoking private Lambda functions with JSON payloads
-pub struct PrivateLambdaClient {
+pub struct SsLambdaClient {
     lambda_client: LambdaClient,
     function_arn: String,
 }
 
-impl PrivateLambdaClient {
+impl SsLambdaClient {
     /// Create a new client for a specific Lambda function
     pub async fn new(function_arn: String) -> Self {
         let config = aws_config::load_from_env().await;

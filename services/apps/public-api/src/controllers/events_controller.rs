@@ -1,6 +1,7 @@
-use lambda_http::{Body, Request, Response};
+use base::services::api::json_response;
+use lambda_http::Request;
 use serde_json::json;
-use lambda_client::PrivateLambdaClient;
+use lambda_client::SsLambdaClient;
 use base::ErrorResponse;
 use base::models::api::{
   ListEventsRequest,
@@ -8,7 +9,7 @@ use base::models::api::{
   SaveEventResponse,
   EventRequest,
   EventResponse,
-  ApiResult, 
+  ApiResult
 };
 use crate::service::CONFIG;
 
@@ -17,20 +18,23 @@ pub async fn list_events(_req: Request) -> ApiResult {
     match &CONFIG.events_lambda_arn {
       Some(arn) => arn.clone(),
       None => {
-        let body = serde_json::to_string(
-            &ErrorResponse::new("ConfigError", "EVENTS_LAMBDA_ARN not set")
-        )?;
+      let err_value = &ErrorResponse::new("ConfigError", "EVENTS_LAMBDA_ARN not set");
+      return json_response(500, err_value);
 
-        let response = Response::builder()
-            .status(500)
-            .header("content-type", "application/json")
-            .body(Body::Text(body))?;
+        // let body = serde_json::to_string(
+        //     &ErrorResponse::new("ConfigError", "EVENTS_LAMBDA_ARN not set")
+        // )?;
 
-        return Ok(response);
+        // let response = Response::builder()
+        //     .status(500)
+        //     .header("content-type", "application/json")
+        //     .body(Body::Text(body))?;
+
+        // return Ok(response);
       }
     };
 
-  let client = PrivateLambdaClient::new(events_lambda_arn).await;
+  let client = SsLambdaClient::new(events_lambda_arn).await;
   let lambda_req = EventRequest::ListEvents(ListEventsRequest {
     start_date: None,
     end_date: None,
@@ -43,33 +47,47 @@ pub async fn list_events(_req: Request) -> ApiResult {
         .map(|e| serde_json::to_value(e).unwrap())
         .collect();
 
-      let body = json!({ "events": events, "nextToken": response.next_token }).to_string();
+      let result = json!({ "events": events, "nextToken": response.next_token });
+      let response = json_response(200, &result);
+      response
+      
 
-      let response = Response::builder()
-          .status(200)
-          .header("content-type", "application/json")
-          .body(Body::Text(body))?;
+      // let body = json!({ "events": events, "nextToken": response.next_token }).to_string();
 
-      Ok(response)
+      // let response = Response::builder()
+      //     .status(200)
+      //     .header("content-type", "application/json")
+      //     .body(Body::Text(body))?;
+
+      // Ok(response)
     }
     Ok(_) => {
-      let body = json!({ "error": "Unexpected response from events service" }).to_string();
-      let response = Response::builder()
-        .status(500)
-        .header("content-type", "application/json")
-        .body(Body::Text(body))?;
+      let err_value = &ErrorResponse::new("InternalError", "Unexpected response from events service");
+      let response = json_response(500, err_value);
+      response
 
-      Ok(response)
+      // let body = json!({ "error": "Unexpected response from events service" }).to_string();
+      // let response = Response::builder()
+      //   .status(500)
+      //   .header("content-type", "application/json")
+      //   .body(Body::Text(body))?;
+
+      // Ok(response)
     },
     Err(e) => {
-      let body = serde_json::to_string(&ErrorResponse::new("InternalError", e.to_string()))?;
+      let err_value = &ErrorResponse::new("InternalError", e.to_string());
+      let response = json_response(500, err_value);
+      response
 
-      let response = Response::builder()
-          .status(500)
-          .header("content-type", "application/json")
-          .body(Body::Text(body))?;
+      // let body = serde_json::to_string(&ErrorResponse::new("InternalError", e.to_string()))?;
 
-      Ok(response)
+      // let response = Response::builder()
+      //     .status(500)
+      //     .header("content-type", "application/json")
+      //     .body(Body::Text(body))?;
+
+      // let x = Ok(response);
+      // return x;
     }
   }
 }
@@ -79,34 +97,37 @@ pub async fn save_event(req: Request) -> ApiResult {
     match &CONFIG.events_lambda_arn {
       Some(arn) => arn.clone(),
       None => {
-        let body = serde_json::to_string(
-            &ErrorResponse::new("ConfigError", "EVENTS_LAMBDA_ARN not set")
-        )?;
+        let err_value = &ErrorResponse::new("ConfigError", "EVENTS_LAMBDA_ARN not set");
+        return json_response(500, err_value);
 
-        let response = Response::builder()
-            .status(500)
-            .header("content-type", "application/json")
-            .body(Body::Text(body))?;
+        // let body = serde_json::to_string(
+        //     &ErrorResponse::new("ConfigError", "EVENTS_LAMBDA_ARN not set")
+        // )?;
 
-        return Ok(response);
+        // let response = Response::builder()
+        //     .status(500)
+        //     .header("content-type", "application/json")
+        //     .body(Body::Text(body))?;
+
+        // return Ok(response);
       }
     };
 
-  let client = PrivateLambdaClient::new(events_lambda_arn).await;
+  let client = SsLambdaClient::new(events_lambda_arn).await;
 
   let save_event_req: SaveEventRequest = match serde_json::from_slice(req.body().as_ref()) {
     Ok(value) => value,
     Err(e) => {
-      let body = serde_json::to_string(
-        &ErrorResponse::new("BadRequest", format!("Invalid request body: {}", e))
-      )?;
+      let err_value = &ErrorResponse::new("BadRequest", format!("Invalid request body: {}", e));
+      return json_response(400, err_value);
+      // let body = serde_json::to_string(err_value)?;
 
-      let response = Response::builder()
-        .status(400)
-        .header("content-type", "application/json")
-        .body(Body::Text(body))?;
+      // let response = Response::builder()
+      //   .status(400)
+      //   .header("content-type", "application/json")
+      //   .body(Body::Text(body))?;
 
-      return Ok(response);
+      // return Ok(response);
     }
   };
 
@@ -114,34 +135,39 @@ pub async fn save_event(req: Request) -> ApiResult {
 
   match client.invoke::<_, EventResponse>(lambda_req).await {
     Ok(EventResponse::SaveEvent(response)) => {
-      let body = serde_json::to_string(&response)?;
+      json_response(200, &response)
+      // let body = serde_json::to_string(&response)?;
 
-      let response = Response::builder()
-          .status(200)
-          .header("content-type", "application/json")
-          .body(Body::Text(body))?;
+      // let response = Response::builder()
+      //     .status(200)
+      //     .header("content-type", "application/json")
+      //     .body(Body::Text(body))?;
 
-      Ok(response)
+      // Ok(response)
     }
     Ok(_) => {
-      let body = json!({ "error": "Unexpected response from events service" }).to_string();
+      let err_value = &ErrorResponse::new("InternalError", "Unexpected response from events service");
+      json_response(500, err_value)
+      // let body = errValue.to_string();
 
-      let response = Response::builder()
-          .status(500)
-          .header("content-type", "application/json")
-          .body(Body::Text(body))?;
+      // let response = Response::builder()
+      //     .status(500)
+      //     .header("content-type", "application/json")
+      //     .body(Body::Text(body))?;
 
-      Ok(response)
+      // Ok(response)
     }
     Err(e) => {
-      let body = serde_json::to_string(&ErrorResponse::new("InternalError", e.to_string()))?;
+      let err_value = ErrorResponse::new("InternalError", e.to_string());
+      json_response(500, &err_value)
+      // let body = serde_json::to_string(&err_value)?;
 
-      let response = Response::builder()
-          .status(500)
-          .header("content-type", "application/json")
-          .body(Body::Text(body))?;
+      // let response = Response::builder()
+      //     .status(500)
+      //     .header("content-type", "application/json")
+      //     .body(Body::Text(body))?;
 
-      Ok(response)
+      // Ok(response)
     }
   }
 }
