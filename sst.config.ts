@@ -11,25 +11,26 @@ export default $config({
   },
   async run() {
     // Remember: We only have to define fields we want to index on.
-    // Field ref is a 'namespaced' type & location for indexing:
-    //  type + addressCountry + addressStateProvince.
-    // Field id is a unique CUID.
     const dev = false;
     const eventsTable = new sst.aws.Dynamo("Events", {
       fields: {
-        ns: "string",
-        id: "string",  
-        startDate: "number",
-        endDate: "number",
-        distanceMin: "number",
-        distanceMax: "number",
+        Ns: "string", // event_type~~country_code
+        Id: "string", // CUID
+        StartDate: "number",
+        EndDate: "number",
+        DistanceMin: "number",
+        DistanceMax: "number",
+        Date: "number",
+        AddressAdministrativeAreaIdx: "string", // event_type~~country_code~~administrative_area
       },
-      primaryIndex: { hashKey: "ns", rangeKey: "id" },
+      primaryIndex: { hashKey: "Ns", rangeKey: "Id" },
       globalIndexes: {
-        StartDateIndex: { hashKey: "startDate" },
-        EndDateIndex: { hashKey: "endDate" },
-        DistanceMinIndex: { hashKey: "distanceMin" },
-        DistanceMaxIndex: { hashKey: "distanceMax" },
+        StartDateIndex: { hashKey: "Ns", rangeKey: "StartDate" },
+        DateIndex: { hashKey: "Ns", rangeKey: "Date" },
+        EndDateIndex: { hashKey: "Ns", rangeKey: "EndDate" },
+        DistanceMinIndex: { hashKey: "Ns", rangeKey: "DistanceMin" },
+        DistanceMaxIndex: { hashKey: "Ns", rangeKey: "DistanceMax" },
+        AddressAdministrativeAreaIndex: { hashKey: "AddressAdministrativeAreaIdx", rangeKey: "Date" },
       }
     });
 

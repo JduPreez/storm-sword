@@ -35,6 +35,8 @@ anyhow = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+cuid2 = "^0.1.6"
+
 [workspace.dependencies.base]
 path = "services/packages/base"
 
