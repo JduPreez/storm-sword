@@ -2,8 +2,8 @@ use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use tracing::info;
 use tracing_subscriber;
 use std::panic;
-use std::collections::HashMap;
-use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
+use aws_sdk_dynamodb::Client as DynamoClient;
+use serde::Serialize;
 use cuid2::cuid;
 
 use base::models::events::{ Event, Address };
@@ -19,6 +19,42 @@ use base::models::api::{
 
 fn normalize(s: &str) -> String {
     s.chars().filter(|c| !c.is_whitespace()).collect::<String>().to_lowercase()
+}
+
+/// DynamoDB storage representation of an `Event`.
+///
+/// `Event` is the public API wire type (camelCase JSON), so it can't double as
+/// the persistence schema. This DTO carries the PascalCase attribute names the
+/// `Events` table indexes on (see `sst.config.ts`) and includes
+/// `AddressAdministrativeAreaIdx`, which `Event` marks `#[serde(skip_serializing)]`.
+/// `serde_dynamo` serializes it directly to an item, so `Address`/`Metadata`
+/// land as native Maps rather than opaque JSON strings.
+#[derive(Serialize)]
+struct EventItem {
+    #[serde(rename = "Id")]
+    id: String,
+    #[serde(rename = "Ns")]
+    ns: String,
+    #[serde(rename = "Name")]
+    name: String,
+    #[serde(rename = "EventType", skip_serializing_if = "Option::is_none")]
+    event_type: Option<String>,
+    #[serde(rename = "StartDate", skip_serializing_if = "Option::is_none")]
+    start_date: Option<i64>,
+    #[serde(rename = "EndDate", skip_serializing_if = "Option::is_none")]
+    end_date: Option<i64>,
+    #[serde(rename = "DistanceMin", skip_serializing_if = "Option::is_none")]
+    distance_min: Option<f64>,
+    #[serde(rename = "DistanceMax", skip_serializing_if = "Option::is_none")]
+    distance_max: Option<f64>,
+    #[serde(rename = "Address")]
+    address: Address,
+    #[serde(rename = "AddressAdministrativeAreaIdx")]
+    address_administrative_area_idx: String,
+    #[serde(rename = "Description", skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
+    #[serde(rename = "Metadata", skip_serializing_if = "Option::is_none")]
+    metadata: Option<serde_json::Value>,
 }
 
 async fn list_events(req: ListEventsRequest) -> Result<ListEventsResponse, Error> {
@@ -120,7 +156,6 @@ async fn save_event(
         event.id = Some(cuid());
     }
 
-    let id = event.id.clone().unwrap();
     let event_type = event.event_type.clone().unwrap_or_default();
     event.ns = Some(
       normalize(
@@ -130,31 +165,6 @@ async fn save_event(
         )
       )
     );
-
-    let mut item: HashMap<String, AttributeValue> = HashMap::new();
-    item.insert("Id".to_string(), AttributeValue::S(id));
-    item.insert("Ns".to_string(), AttributeValue::S(event.ns.clone().unwrap_or_default()));
-    item.insert("Name".to_string(), AttributeValue::S(event.name.clone()));
-
-    if let Some(v) = event.start_date {
-        item.insert("StartDate".to_string(), AttributeValue::N(v.to_string()));
-    }
-    if let Some(v) = event.end_date {
-        item.insert("EndDate".to_string(), AttributeValue::N(v.to_string()));
-    }
-    if let Some(v) = event.distance_min {
-        item.insert("DistanceMin".to_string(), AttributeValue::N(v.to_string()));
-    }
-    if let Some(v) = event.distance_max {
-        item.insert("DistanceMax".to_string(), AttributeValue::N(v.to_string()));
-    }
-    if let Some(ref v) = event.event_type {
-        item.insert("EventType".to_string(), AttributeValue::S(v.clone()));
-    }
-    if let Ok(json) = serde_json::to_string(&event.address) {
-        item.insert("Address".to_string(), AttributeValue::S(json));
-    }
-
     event.address_administrative_area_idx = Some(
       normalize(
         &format!("{}~~{}~~{}",
@@ -164,12 +174,21 @@ async fn save_event(
         )
       )
     );
-    item.insert("AddressAdministrativeAreaIdx".to_string(), 
-      AttributeValue::S(event.address_administrative_area_idx.clone().unwrap_or_default()));
 
-    if let Some(ref v) = event.metadata {
-        item.insert("Metadata".to_string(), AttributeValue::S(v.to_string()));
-    }
+    let item = serde_dynamo::to_item(EventItem {
+        id: event.id.clone().unwrap(),
+        ns: event.ns.clone().unwrap_or_default(),
+        name: event.name.clone(),
+        event_type: event.event_type.clone(),
+        start_date: event.start_date,
+        end_date: event.end_date,
+        distance_min: event.distance_min,
+        distance_max: event.distance_max,
+        address: event.address.clone(),
+        address_administrative_area_idx: event.address_administrative_area_idx.clone().unwrap_or_default(),
+        description: event.description.clone(),
+        metadata: event.metadata.clone(),
+    })?;
 
     client
         .put_item()
