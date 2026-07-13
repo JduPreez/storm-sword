@@ -60,7 +60,13 @@ export default $config({
       environment: { RUST_LOG: "info" },
     });
 
-    api.route("GET /events", {
+    /* Path segments must match [\w-]+ (word chars + hyphens — the regex http_router uses for {param}).
+    So eventType (event_type) can't carry a space or %20 in the path. Send TrailRun, not Trail Run.
+    This is fine because the events service runs the value through normalize (whitespace-strip + lowercase)
+    before building Ns — but note a hyphen is not stripped by normalize, so trail-run and trailrun are different
+    namespaces. The client should send the whitespace-free form of whatever was used at save time.
+    */
+    api.route("GET /events/{eventType}/{countryCode}", {
       runtime: "provided.al2023",
       handler: "bootstrap",
       bundle: "services/apps/public-api/target/lambda/public-api",

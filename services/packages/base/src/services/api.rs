@@ -1,6 +1,6 @@
 use std::future::Future;
 use std::error::Error;
-use crate::models::api::{ApiResult, BoxApiHandler, BoxApiResultFuture};
+use crate::models::api::{ApiResult, BoxApiHandler, BoxApiHandler2, BoxApiResultFuture};
 use lambda_http::{Body, Request, Response};
 
 pub fn handler_boxed<F, Fut>(f: F) -> BoxApiHandler
@@ -11,6 +11,20 @@ where
     Box::new(move |req: &Request| {
         let owned = req.clone();
         Box::pin(f(owned)) as BoxApiResultFuture
+    })
+}
+
+/// Box a handler that takes two typed path params, for routes like
+/// `GET /events/{eventType}/{countryCode}`. Mirrors `handler_boxed` but
+/// forwards the two `String` segments `http_router` captured from the path.
+pub fn handler_boxed_2p<F, Fut>(f: F) -> BoxApiHandler2
+where
+    F: Fn(Request, String, String) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = ApiResult> + Send + 'static,
+{
+    Box::new(move |req: &Request, p1: String, p2: String| {
+        let owned = req.clone();
+        Box::pin(f(owned, p1, p2)) as BoxApiResultFuture
     })
 }
 
