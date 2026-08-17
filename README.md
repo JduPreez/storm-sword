@@ -1,7 +1,8 @@
 ## Deployment
 
 1. `./build.sh
-2. `./run-dev.clj` is running for the first time or 
+2. `cd clients/web && npm install` if running for the first time (SST's build/dev commands shell out to `npm run ...` but don't install dependencies for you).
+3. `./run-dev.clj` is running for the first time or 
 `sst deploy` if SST is already running.
 
 ## Unit tests

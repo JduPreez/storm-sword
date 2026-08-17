@@ -54,7 +54,10 @@ export default $config({
     const eventsApiToken = new sst.Secret("EventsApiToken");
 
     // Public API Gateway
-    const api = new sst.aws.ApiGatewayV2("PublicApi");
+    // cors: true is already the default when omitted, but kept explicit here since it's
+    // the hook for tightening later. Note the merge is shallow — narrowing allowOrigins
+    // alone won't narrow allowMethods/allowHeaders, those need to be set explicitly too.
+    const api = new sst.aws.ApiGatewayV2("PublicApi", { cors: true });
 
     api.route("GET /health", {
       runtime: "provided.al2023",
@@ -95,8 +98,24 @@ export default $config({
       },
     });
 
+    // React + Ant Design SPA, built with Vite, served as static assets
+    const web = new sst.aws.StaticSite("Web", {
+      path: "clients/web",
+      build: {
+        command: "npm run build",
+        output: "dist",
+      },
+      environment: {
+        VITE_API_URL: api.url,
+      },
+      ...($dev
+        ? { dev: { url: "http://localhost:5173" } }
+        : {}),
+    });
+
     return {
       api: api.url,
+      web: web.url,
       eventsService: eventsService.name,
     };
   },
