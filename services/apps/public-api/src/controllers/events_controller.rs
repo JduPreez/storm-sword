@@ -3,6 +3,7 @@ use base::models::api::{
   ApiResult, EventRequest, EventResponse, ListEventsRequest, SaveEventRequest,
 };
 use base::services::api::json_response;
+use base::services::auth;
 use base::ErrorResponse;
 use lambda_client::SsLambdaClient;
 use lambda_http::{Request, RequestExt};
@@ -64,6 +65,18 @@ pub async fn list_events(req: Request, event_type: String, country_code: String)
 }
 
 pub async fn save_event(req: Request) -> ApiResult {
+  let api_token = match &CONFIG.api_token {
+    Some(token) => token,
+    None => {
+      let err_value = &ErrorResponse::new("ConfigError", "API_TOKEN not set");
+      return json_response(500, err_value);
+    }
+  };
+
+  if !auth::is_authorized(&req, api_token) {
+    return auth::unauthorized_response();
+  }
+
   let events_lambda_arn = match &CONFIG.events_lambda_arn {
     Some(arn) => arn.clone(),
     None => {

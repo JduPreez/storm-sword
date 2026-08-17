@@ -2,3 +2,5 @@
 .clj-kondo
 .lsp
 **/target/**
+.DS_Store
+*.envrc

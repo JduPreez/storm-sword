@@ -49,6 +49,10 @@ export default $config({
       }
     });
 
+    // Shared-secret token for mutating public-api routes. Set the value with:
+    //   npx sst secret set EventsApiToken <token> --stage <stage>
+    const eventsApiToken = new sst.Secret("EventsApiToken");
+
     // Public API Gateway
     const api = new sst.aws.ApiGatewayV2("PublicApi");
 
@@ -86,6 +90,7 @@ export default $config({
       permissions: [{ actions: ["lambda:InvokeFunction"], resources: [eventsService.arn] }],
       environment: {
         EVENTS_LAMBDA_ARN: eventsService.arn,
+        API_TOKEN: eventsApiToken.value,
         RUST_LOG: "info",
       },
     });

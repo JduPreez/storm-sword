@@ -1,7 +1,7 @@
 ## Deployment
 
-1. `./build.sh`
-2. `sst dev` is running for the first time or 
+1. `./build.sh
+2. `./run-dev.clj` is running for the first time or 
 `sst deploy` if SST is already running.
 
 ## Unit tests
