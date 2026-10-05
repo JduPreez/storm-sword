@@ -1,3 +1,4 @@
+use crate::models::media::Image;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -20,6 +21,17 @@ pub struct Address {
   pub longitude: Option<f64>,
 }
 
+// TODO: How does this get serailized, because when it's
+// serialized it's represented as a string, e.g., "TrailRace", "MountainBikeRace", "Exhibition"
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum EventType {
+  TrailRunRace,
+  MountainBikeRace,
+  Exhibition,
+  Hike,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Event {
   pub id: Option<String>,
@@ -40,4 +52,7 @@ pub struct Event {
   #[serde(skip_serializing)]
   pub address_administrative_area_idx: Option<String>,
   pub metadata: Option<serde_json::Value>,
+  #[serde(rename = "coverImage")]
+  pub cover_image: Option<Image>,
+  pub images: Option<Vec<Image>>,
 }

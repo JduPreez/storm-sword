@@ -1,9 +1,8 @@
 // Domain model for events. Shared across features, so it must not import
 // anything from features/, services/ or app/.
+export const EVENT_TYPES = ['conference', 'meetup', 'workshop', 'webinar'] as const
 
-export const EVENT_CATEGORIES = ['music', 'sport', 'tech', 'food', 'art'] as const
-
-export type EventCategory = (typeof EVENT_CATEGORIES)[number]
+export type EventType = (typeof EVENT_TYPES)[number]
 
 export interface EventImage {
   id: string
@@ -14,13 +13,16 @@ export interface EventImage {
 // Calling it SsEvent to avoid confusion with the built-in JS/browser Event type.
 export interface SsEvent {
   id: string
-  title: string
-  description: string
-  category: EventCategory
+  ns: string
+  eventType: EventType
+  name: string
   /** ISO 8601 date-time, e.g. "2026-10-17T19:30:00Z" */
-  startsAt: string
-  venue: string
-  city: string
+  startDate: string
+  endDate: string
+  distanceMin: number
+  distanceMax: number
+  address: string
+  description: string
   /** Shown in the event list. */
   coverImage: EventImage
   /** Additional images shown on the detail view. */
