@@ -1,6 +1,6 @@
 import { Button, Col, Descriptions, Flex, Image, Result, Row, Spin, Tag, Typography, theme } from 'antd'
 import { Link, useParams } from 'react-router'
-import { CATEGORY_COLORS, CATEGORY_LABELS, formatEventDate } from './display'
+import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, formatEventDate } from './display'
 import { useGetEventQuery } from './eventsApi'
 
 const { Title, Paragraph } = Typography
@@ -38,24 +38,26 @@ function EventDetailPage() {
 
       <Flex align="center" gap="small" wrap>
         <Title level={2} style={{ margin: 0 }}>
-          {event.title}
+          {event.name}
         </Title>
-        <Tag color={CATEGORY_COLORS[event.category]}>{CATEGORY_LABELS[event.category]}</Tag>
+        <Tag color={EVENT_TYPE_COLORS[event.eventType]}>{EVENT_TYPE_LABELS[event.eventType]}</Tag>
       </Flex>
 
-      <Image
-        src={event.coverImage.url}
-        alt={event.coverImage.alt}
-        width="100%"
-        style={{ aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: 8 }}
-      />
+      {event.coverImage && (
+        <Image
+          src={event.coverImage.url}
+          alt={event.coverImage.alt}
+          width="100%"
+          style={{ aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: 8 }}
+        />
+      )}
 
       <Descriptions
         column={{ xs: 1, sm: 3 }}
         items={[
-          { key: 'when', label: 'When', children: formatEventDate(event.startsAt) },
-          { key: 'venue', label: 'Venue', children: event.venue },
-          { key: 'city', label: 'City', children: event.city },
+          { key: 'when', label: 'When', children: formatEventDate(event.startDate) },
+          { key: 'administrativeArea', label: 'State/Province', children: event.address?.administrativeArea },
+          { key: 'city', label: 'City', children: event.address?.cityTownLocality },
         ]}
       />
 

@@ -22,12 +22,12 @@ pub struct Address {
 }
 
 // TODO: How does this get serailized, because when it's
-// serialized it's represented as a string, e.g., "TrailRace", "MountainBikeRace", "Exhibition"
+// serialized it's represented as a string, e.g., "TrailRun", "MountainBike", "Exhibition"
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum EventType {
-  TrailRunRace,
-  MountainBikeRace,
+  TrailRun,
+  MountainBike,
   Exhibition,
   Hike,
 }
@@ -37,7 +37,7 @@ pub struct Event {
   pub id: Option<String>,
   pub ns: Option<String>,
   #[serde(rename = "eventType")]
-  pub event_type: Option<String>,
+  pub event_type: Option<EventType>,
   pub name: String,
   #[serde(rename = "startDate")]
   pub start_date: Option<i64>,

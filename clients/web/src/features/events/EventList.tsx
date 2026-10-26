@@ -19,7 +19,7 @@ function EventList({ events }: EventListProps) {
       // Group by month with sticky headers. Events arrive sorted by date, so
       // the groups come out in chronological order.
       group={{
-        key: (event) => formatEventMonth(event.startsAt),
+        key: (event) => formatEventMonth(event.startDate),
         title: (month) => month,
       }}
       sticky
