@@ -10,7 +10,8 @@ use base::models::api::{
   EventRequest, EventResponse, ListEventsRequest, ListEventsResponse, ResponseInfo,
   SaveEventRequest, SaveEventResponse,
 };
-use base::models::events::{Address, Event};
+use base::models::events::{Address, Event, EventType};
+use base::models::media::Image;
 
 fn normalize(s: &str) -> String {
   s.chars()
@@ -36,7 +37,7 @@ struct EventDao {
   #[serde(rename = "Name")]
   name: String,
   #[serde(rename = "EventType", skip_serializing_if = "Option::is_none")]
-  event_type: Option<String>,
+  event_type: Option<EventType>,
   #[serde(rename = "StartDate", skip_serializing_if = "Option::is_none")]
   start_date: Option<i64>,
   #[serde(rename = "EndDate", skip_serializing_if = "Option::is_none")]
@@ -51,6 +52,10 @@ struct EventDao {
   address_administrative_area_idx: String,
   #[serde(rename = "Description", skip_serializing_if = "Option::is_none")]
   description: Option<String>,
+  #[serde(rename = "CoverImage", skip_serializing_if = "Option::is_none")]
+  cover_image: Option<String>,
+  #[serde(rename = "Images", skip_serializing_if = "Option::is_none")]
+  images: Option<Vec<String>>,
   #[serde(rename = "Metadata", skip_serializing_if = "Option::is_none")]
   metadata: Option<serde_json::Value>,
 }
@@ -69,6 +74,10 @@ impl From<EventDao> for Event {
       address: dao.address,
       description: dao.description,
       address_administrative_area_idx: Some(dao.address_administrative_area_idx),
+      cover_image: dao.cover_image.map(Image::from_id),
+      images: dao
+        .images
+        .map(|ids| ids.into_iter().map(Image::from_id).collect()),
       metadata: dao.metadata,
     }
   }
@@ -122,7 +131,14 @@ async fn save_event(
     event.id = Some(cuid());
   }
 
-  let event_type = event.event_type.clone().unwrap_or_default();
+  // Use the serde wire name (e.g. "TRAIL_RUN") so the key matches what's stored.
+  let event_type = match &event.event_type {
+    Some(t) => serde_json::to_value(t)?
+      .as_str()
+      .unwrap_or_default()
+      .to_string(),
+    None => String::new(),
+  };
   event.ns = Some(normalize(&format!(
     "{}~~{}",
     event_type, event.address.country_code
@@ -147,6 +163,11 @@ async fn save_event(
       .clone()
       .unwrap_or_default(),
     description: event.description.clone(),
+    cover_image: event.cover_image.as_ref().and_then(|i| i.id.clone()),
+    images: event
+      .images
+      .as_ref()
+      .map(|imgs| imgs.iter().filter_map(|i| i.id.clone()).collect()),
     metadata: event.metadata.clone(),
   })?;
 

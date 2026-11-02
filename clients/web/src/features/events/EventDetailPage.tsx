@@ -6,14 +6,14 @@ import { useGetEventQuery } from './eventsApi'
 const { Title, Paragraph } = Typography
 
 function EventDetailPage() {
-  const { eventId = '' } = useParams()
-  const { data: event, isLoading, error } = useGetEventQuery(eventId)
+  const { eventId = '' } = useParams();
+  const { data: event, isLoading, error } = useGetEventQuery(eventId);
   // react-router's <Link> is a plain <a>, which antd doesn't style, so take the
   // link colour from the theme.
-  const { token } = theme.useToken()
+  const { token } = theme.useToken();
 
   if (isLoading) {
-    return <Spin />
+    return <Spin />;
   }
 
   if (error || !event) {
@@ -27,8 +27,10 @@ function EventDetailPage() {
           </Link>
         }
       />
-    )
+    );
   }
+
+  const images = (event.images ?? []).filter((image) => image.id && image.url);
 
   return (
     <Flex vertical gap="middle">
@@ -43,7 +45,7 @@ function EventDetailPage() {
         <Tag color={EVENT_TYPE_COLORS[event.eventType]}>{EVENT_TYPE_LABELS[event.eventType]}</Tag>
       </Flex>
 
-      {event.coverImage && (
+      {event.coverImage?.url && (
         <Image
           src={event.coverImage.url}
           alt={event.coverImage.alt}
@@ -63,7 +65,7 @@ function EventDetailPage() {
 
       <Paragraph>{event.description}</Paragraph>
 
-      {event.images.length > 0 && (
+      {images.length > 0 && (
         <>
           <Title level={4} style={{ margin: 0 }}>
             Gallery
@@ -71,7 +73,7 @@ function EventDetailPage() {
           {/* PreviewGroup lets the user page through all gallery images in the lightbox. */}
           <Image.PreviewGroup>
             <Row gutter={[12, 12]}>
-              {event.images.map((image) => (
+              {images.map((image) => (
                 <Col key={image.id} xs={12} sm={8}>
                   <Image
                     src={image.url}
@@ -86,7 +88,7 @@ function EventDetailPage() {
         </>
       )}
     </Flex>
-  )
+  );
 }
 
 export default EventDetailPage

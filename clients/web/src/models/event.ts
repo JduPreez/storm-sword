@@ -5,9 +5,9 @@ export const EVENT_TYPES = ['TRAIL_RUN', 'MOUNTAIN_BIKE', 'EXHIBITION', 'HIKE'] 
 export type EventType = (typeof EVENT_TYPES)[number]
 
 export interface EventImage {
-  id: string
-  url: string
-  alt: string
+  id?: string
+  url?: string
+  alt?: string
 }
 
 export interface Address {
@@ -40,5 +40,5 @@ export interface SsEvent {
   /** Shown in the event list. */
   coverImage?: EventImage
   /** Additional images shown on the detail view. */
-  images: EventImage[]
+  images?: EventImage[]
 }

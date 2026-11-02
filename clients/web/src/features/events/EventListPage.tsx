@@ -6,7 +6,7 @@ import { EVENT_TYPES, type DateTime, type EventType, type SsEvent } from '../../
 import { COUNTRY_CODES } from './display'
 import EventFilters from './EventFilters'
 import EventList from './EventList'
-import { useListEventsQuery } from './eventsApi' // '../../services/eventsApi'
+import { useListEventsQuery } from '../../services/eventsApi' // './eventsApi'
 import type { EventFilter } from './types'
 
 const { Title } = Typography

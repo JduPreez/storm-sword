@@ -17,7 +17,7 @@ function EventListItem({ event }: EventListItemProps) {
   return (
     <Link to={`/events/${event.id}`} style={{ display: 'block', color: 'inherit' }}>
       <Flex gap="middle" align="center">
-        {event.coverImage ? (
+        {event.coverImage?.url ? (
           <img
             src={event.coverImage.url}
             alt={event.coverImage.alt}
