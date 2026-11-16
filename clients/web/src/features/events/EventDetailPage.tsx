@@ -1,7 +1,7 @@
 import { Button, Col, Descriptions, Flex, Image, Result, Row, Spin, Tag, Typography, theme } from 'antd'
 import { Link, useParams } from 'react-router'
 import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, formatEventDate } from './display'
-import { useGetEventQuery } from './eventsApi'
+import { useGetEventQuery } from '../../services/eventsApi' // './eventsApi'
 
 const { Title, Paragraph } = Typography
 

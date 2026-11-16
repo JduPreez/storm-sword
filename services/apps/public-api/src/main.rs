@@ -56,11 +56,13 @@ async fn main() -> Result<(), lambda_http::Error> {
     get_health,
     list_events,
     save_event,
+    get_event,
   } = handlers;
 
   let router = Arc::new(router!(
     GET /health => get_health,
     GET /events/{event_type: String}/{country_code: String} => list_events,
+    GET /events/{eventId: String} => get_event,
     POST /events => save_event,
     _ => not_found_boxed,
   ));

@@ -27,6 +27,17 @@ pub struct ListEventsResponse {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct GetEventRequest {
+  pub event_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct GetEventResponse {
+  pub event: Option<Event>,
+  pub response: ResponseInfo,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SaveEventRequest {
   pub event: Event,
 }
@@ -42,6 +53,7 @@ pub struct SaveEventResponse {
 pub enum EventRequest {
   ListEvents(ListEventsRequest),
   SaveEvent(SaveEventRequest),
+  GetEvent(GetEventRequest),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -49,6 +61,7 @@ pub enum EventRequest {
 pub enum EventResponse {
   ListEvents(ListEventsResponse),
   SaveEvent(SaveEventResponse),
+  GetEvent(GetEventResponse),
 }
 
 pub type ApiResult = Result<Response<Body>, lambda_http::Error>;

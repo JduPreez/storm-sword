@@ -1,11 +1,12 @@
 use crate::service::CONFIG;
 use base::models::api::{
-  ApiResult, EventRequest, EventResponse, ListEventsRequest, SaveEventRequest,
+  ApiResult, EventRequest, EventResponse, GetEventRequest, ListEventsRequest, SaveEventRequest,
 };
 use base::services::api::json_response;
 use base::services::auth;
 use base::ErrorResponse;
 use lambda_client::SsLambdaClient;
+use lambda_http::http::response;
 use lambda_http::{Request, RequestExt};
 use serde_json::json;
 
@@ -55,6 +56,35 @@ pub async fn list_events(req: Request, event_type: String, country_code: String)
         &ErrorResponse::new("InternalError", "Unexpected response from events service");
       let response = json_response(500, err_value);
       response
+    }
+    Err(e) => {
+      let err_value = &ErrorResponse::new("InternalError", e.to_string());
+      let response = json_response(500, err_value);
+      response
+    }
+  }
+}
+
+pub async fn get_event(_req: Request, event_id: String) -> ApiResult {
+  let events_lambda_arn = match &CONFIG.events_lambda_arn {
+    Some(arn) => arn.clone(),
+    None => {
+      let err_value = &ErrorResponse::new("ConfigError", "EVENTS_LAMBDA_ARN not set");
+      return json_response(500, err_value);
+    }
+  };
+
+  let get_event_req = GetEventRequest { event_id };
+
+  let client = SsLambdaClient::new(events_lambda_arn).await;
+  let lambda_req = EventRequest::GetEvent(get_event_req);
+
+  match client.invoke::<_, EventResponse>(lambda_req).await {
+    Ok(EventResponse::GetEvent(response)) => json_response(200, &response),
+    Ok(_) => {
+      let err_value =
+        &ErrorResponse::new("InternalError", "Unexpected response from events service");
+      json_response(500, err_value)
     }
     Err(e) => {
       let err_value = &ErrorResponse::new("InternalError", e.to_string());

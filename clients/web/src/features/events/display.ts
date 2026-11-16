@@ -19,7 +19,45 @@ export const EVENT_TYPE_COLORS: Record<EventType, string> = {
 
 // Countries offered in the filter. The API lists events per country, so add a
 // code here when events start appearing somewhere new.
-export const COUNTRY_CODES = ['DE', 'NL', 'PT'] as const
+export const COUNTRY_CODES = [
+  'AD', // Andorra
+  'AR', // Argentina
+  'AU', // Australia
+  'AT', // Austria
+  'BR', // Brazil
+  'CA', // Canada
+  'CL', // Chile
+  'CN', // China
+  'HR', // Croatia
+  'EC', // Ecuador
+  'FR', // France
+  'DE', // Germany
+  'HK', // Hong Kong
+  'ID', // Indonesia
+  'IT', // Italy
+  'JP', // Japan
+  'LV', // Latvia
+  'MY', // Malaysia
+  'MU', // Mauritius
+  'MX', // Mexico
+  'NZ', // New Zealand
+  'OM', // Oman
+  'PL', // Poland
+  'PT', // Portugal
+  'RO', // Romania
+  'SI', // Slovenia
+  'ZA', // South Africa
+  'KR', // South Korea
+  'ES', // Spain
+  'SE', // Sweden
+  'CH', // Switzerland
+  'TW', // Taiwan
+  'TH', // Thailand
+  'TR', // Turkey
+  'GB', // United Kingdom
+  'US', // United States
+  'VN', // Vietnam
+] as const
 
 const regionNames = new Intl.DisplayNames(undefined, { type: 'region' })
 
